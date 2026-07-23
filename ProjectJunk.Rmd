@@ -1,0 +1,208 @@
+---
+title: "ProjectJunk"
+output: pdf_document
+---
+
+
+1. Fit the logistic regression model to the real dataset.
+
+2. Save the estimated regression coefficients and treat them as the true parameter values.
+
+3. Repeat the following steps for a large number of simulations:
+
+- Sample values of the predictor variables (gender, daily social media hours, sleep hours, stress level, and     anxiety level) from the observed data.
+
+- Use the fitted logistic regression model to calculate the probability of depression for each observation.
+
+- Generate a depression outcome (0 = No, 1 = Yes) from a Bernoulli distribution using the calculated             probability.
+
+- Combine the predictors and generated outcomes to form a synthetic dataset.
+
+- Fit the same logistic regression model to the synthetic dataset.
+
+- Store the estimated regression coefficients.
+
+4. Compare the estimated coefficients from the simulations to the true coefficient values used to generate the    data.
+
+5. Evaluate whether the estimation procedure is able to recover the true parameter values accurately and          consistently.
+
+```{r}
+```r
+# Fit logistic regression model to real data
+depression_model <- glm(
+  depression_label ~ gender +
+    daily_social_media_hours +
+    sleep_hours +
+    stress_level +
+    anxiety_level,
+  data = TMH,
+  family = binomial
+)
+
+# Save estimated coefficients
+beta_hat <- coef(depression_model)
+
+# Repeat many times
+for (sim in 1:num_simulations) {
+
+  # Sample predictor values from observed data
+  X_sim <- sample_rows(TMH)
+
+  # Compute predicted probabilities
+  p <- predict(depression_model,
+               newdata = X_sim,
+               type = "response")
+
+  # Generate synthetic depression outcomes
+  y_sim <- rbinom(
+    n = number_of_observations,
+    size = 1,
+    prob = p
+  )
+
+  # Create synthetic dataset
+  sim_data <- combine(X_sim, y_sim)
+
+  # Refit logistic regression model
+  sim_model <- glm(
+    depression_label ~ gender +
+      daily_social_media_hours +
+      sleep_hours +
+      stress_level +
+      anxiety_level,
+    data = sim_data,
+    family = binomial
+  )
+
+  # Store coefficient estimates
+  save(coef(sim_model))
+}
+
+# Compare simulated coefficient estimates
+# to the original estimates beta_hat
+```
+
+
+
+
+
+
+```{r echo = FALSE}
+depression_counts <- table(TMH$depression_label)
+
+
+boxplot(
+  sleep_hours ~ depression_label,
+  data = TMH,
+  main = "Sleep Hours by Depression Label",
+  xlab = "Depression Label",
+  ylab = "Sleep Hours",
+  col = c("lightblue", "red")
+)
+```
+
+```{r echo = FALSE}
+boxplot(
+  daily_social_media_hours ~ depression_label,
+  data = TMH,
+  main = "Daily Social Media Hours by Depression Label",
+  ylab = "Hours",
+  xlab = "Depression Label",
+  col = c("lightgreen", "red")
+)
+```
+
+```{r echo = FALSE}
+boxplot(
+  TMH$daily_social_media_hours,
+  main = "Daily Social Media Hours",
+  ylab = "Hours",
+  col = "lightgreen"
+)
+```
+
+```{r echo = FALSE}
+hist(
+  TMH$age,
+  main = "Distribution of Age",
+  xlab = "Age",
+  col = "lightblue"
+)
+```
+
+```{r echo = FALSE}
+plot(
+  TMH$age,
+  TMH$daily_social_media_hours,
+  main = "Age vs Daily Social Media Usage",
+  xlab = "Age",
+  ylab = "Daily Social Media Hours",
+  pch = 18,
+  col = "black"
+)
+
+```
+
+```{r echo = FALSE}
+numeric_vars <- sapply(TMH, is.numeric)
+
+cor(
+  TMH[, numeric_vars],
+  use = "complete.obs"
+)
+```
+
+### Population Features
+
+- Average social media usage among teenagers.
+
+- Relationships between social media use and:
+
+  1.  stress
+  2.  anxiety
+  3.  addiction
+  4.  depression
+
+- Whether reduced sleep is associated with worse mental health.
+
+- Differences in mental health outcomes by gender.
+
+- Connections between physical activity and lower stress/anxiety.
+
+- How academic performance changes with screen time or stress.
+
+- Presence of outliers or unusually high-risk groups.
+
+- Overall prevalence of depression labels in the population.
+
+### Model
+
+```{r}
+head(TMH)
+summary(TMH)
+```
+
+```{r}
+depression_model <- glm(
+  depression_label ~ gender + 
+                     daily_social_media_hours + 
+                     sleep_hours +
+                     stress_level +
+                     anxiety_level,
+  data = TMH,
+  family = binomial(link = "logit")
+)
+
+# View results
+summary(depression_model)
+```
+
+A logistic regression model was used because the response variable, depression_label, is binary, indicating whether a teen is classified as depressed (1) or not depressed (0). Linear regression is not appropriate for a binary outcome because it can produce predicted values outside the range of 0 to 1 and does not account for the relationship between predictors and probabilities. Logistic regression addresses this issue by modeling the log-odds of depression as a function of the explanatory variables. In this model, gender, daily social media hours, sleep hours, stress level, and anxiety level are used to explain variation in the probability that a teen is classified as depressed. The estimated regression coefficients describe how changes in these variables are associated with changes in the *odds* of depression, making logistic regression an appropriate choice for this analysis.
+
+Our model is as follows:
+
+$log(\frac{p_i}{1-p_i}) = \beta_0 + \beta_1(gender_i) + \beta_2(daily\_social\_media\_hours_i) + \beta_3(sleep\_hours_i) + \beta_4(stress\_level_i) + \beta_5(anxiety\_level_i)$
+
+## Possible predictions
+
+The proposed model for this project is a logistic regression model because the response variable (`depression_label`) is binary. A common estimation procedure for logistic regression is **Maximum Likelihood Estimation (MLE)**, which estimates the model coefficients by maximizing the likelihood of the observed data. To obtain the MLEs, optimization algorithms such as **Iteratively Reweighted Least Squares (IRLS)** and **Newton–Raphson** are commonly used. Another possible approach is **penalized maximum likelihood estimation**, such as Ridge or LASSO logistic regression, which can help improve model stability and reduce overfitting when predictors are highly correlated. These methods are appropriate because they are designed for estimating parameters in binary response models.

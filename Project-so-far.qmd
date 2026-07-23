@@ -1,0 +1,186 @@
+---
+title: "Project-so-far"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+## The data
+
+The data set I chose is the [Social Media Impact on Teen Mental Health](https://www.kaggle.com/datasets/algozee/teenager-menthal-healy/data) data set. This data studies how social media use affects the mental health of teenagers. It includes daily habits like social media hours, sleep, stress, anxiety, and physical activity. I chose this data because of the normalization of what people are calling "doom scrolling," which in lammens terms is spending hours scrolling through social media with no end in sight. Most social media platforms today all have a section for short, repeating clips and videos that are meant to hold your attention for hours on end. I myself have caught myself doom scrolling, losing track of time and becoming completely encapsulated by these short videos, often called "shorts." What I want to know is whether or not spending large amounts of time on social media can influence your mental health, and whether other daily activities such as exercise, sleep, and real-life interactions can benefit mental health.
+
+```{r}
+library(readr)
+TMH <- read_csv("Teen_Mental_Health_Dataset.csv")
+summary(TMH)
+str(TMH)
+```
+
+Lets change some of the character values to factors. I also will not be including `addiction level` nor `platform_ usage` in this model. I won't be including `addiction level` because it is too closely related to the response variable of interest, `depression label` (a binary variable taking on values 0 or 1). I won't be including `platform_ usage` because it doesn't relate to our research question. If we wanted to measure which platforms are more closely related to depression, then we'd include it. What we're interested in though, is how **all** social media usage affects teen mental health.
+
+```{r}
+TMH$gender <- 
+  factor(TMH$gender,
+         levels = c("female", "male"))
+
+TMH$social_interaction_level <- 
+  factor(TMH$social_interaction_level,
+         levels = c("low", "medium", "high"))
+```
+
+Lets check the model for multicolinearity. We'll do this by checking the correlation between all of our numeric predictors.
+
+```{r}
+cor(TMH[, c(
+    "age",
+    "daily_social_media_hours",
+    "sleep_hours",
+    "screen_time_before_sleep",
+    "academic_performance",
+    "physical_activity",
+    "stress_level"
+)])
+```
+
+The correlations are all below 0.08, so none of our numeric predictors are strongly correlated with each other. That means there is no evidence of multicollinearity based on these pairwise correlations
+
+## Model selection
+
+Before we decide on a model, lets fit the full model and see which variables are significant based on their p-values. We'll use a significance level of 0.05 for this model.
+
+```{r}
+full_model <- glm(
+  depression_label ~
+    age +
+    gender +
+    daily_social_media_hours +
+    sleep_hours +
+    screen_time_before_sleep +
+    academic_performance +
+    physical_activity +
+    social_interaction_level +
+    stress_level +
+    anxiety_level,
+  data = TMH,
+  family = binomial(link = "logit")
+)
+```
+
+When fitting this model, we get the following warning: "Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred." It means one or more combinations of predictors almost perfectly predict the outcome. The first thing we'll do is not remove variables yet. Instead, let's see what's causing the warning by running `summary(full_model)` and `range(fitted(full_model))`:
+
+```{r}
+summary(full_model)
+range(fitted(full_model))
+```
+
+Running `range(fitted(full_model))` gave us $2.22*10^{-16}$ to $0.9986$, which confirms there are observations that the model predicts with almost complete certainty. Since all the coefficient estimates and standard errors are finite, this is not complete separation—it's more likely quasi-complete separation. For this project, I don't think it's a major concern, but we should mention it briefly in the report.
+
+Based on the summary of the model,
+
+### Variables I would definitely keep
+
+These are statistically significant and have clear interpretations:
+
+- `gender` (p = 0.041)
+
+- `daily_social_media_hours` (p < 0.001)
+
+- `sleep_hours` (p < 0.001)
+
+- `stress_level` (p < 0.001)
+
+- `anxiety_level` (p < 0.001)
+
+### Variables to consider removing
+
+These do not appear to contribute much once the other variables are in the model:
+
+- `age` (p = 0.354)
+
+- `screen_time_before_sleep` (p = 0.140)
+
+- `physical_activity` (p = 0.142)
+
+- `social_interaction_level` (both levels p > 0.5)
+
+### One variable I'd think about
+
+- `academic_performance`
+
+  - p = 0.077
+
+  - It's close to the 0.05 level.
+
+  - I'll keep it for one more model to see whether it becomes significant after removing clearly unimportant variables
+
+Lets fit another model:
+
+```{r}
+reduced_model_1 <- glm(
+  depression_label ~
+    gender +
+    daily_social_media_hours +
+    sleep_hours +
+    academic_performance +
+    stress_level +
+    anxiety_level,
+  data = TMH,
+  family = binomial(link = "logit")
+)
+
+summary(reduced_model_1)
+```
+
+This model showed an improvement in Akaike's Information Criterion (AIC). The `full_model` had an AIC of `r round(summary(full_model)$aic, 2)`, compared to an AIC of `r round(summary(full_model)$aic, 2)` from `reduced_model_1`.
+
+However, `academic_performance` now has a p-value of `r round(summary(reduced_model_1)$coefficients[5,4], 2)`, which is no longer close to significance. Lets remove it and look at the difference.
+
+```{r}
+reduced_model_2 <- glm(
+  depression_label ~
+    gender +
+    daily_social_media_hours +
+    sleep_hours +
+    stress_level +
+    anxiety_level,
+  data = TMH,
+  family = binomial(link = "logit")
+)
+
+summary(reduced_model_2)
+```
+
+Hold up. `reduced_model_1` actually has the lower AIC, even though it includes one additional predictor (`academic_performance`) that isn't individually significant.
+
+### What does this mean?
+
+Removing `academic_performance` made the model:
+
+- slightly simpler,
+
+- but it **didn't improve the overall fit**. In fact, the AIC got a little worse
+
+For this project, we will use `reduced_model_1` because
+
+- It has the **lowest AIC** of all the models we fit.
+
+- `academic_performance` is close enough to significance that it's reasonable to retain.
+
+- It adds only one coefficient, so we're not sacrificing much simplicity.
+
+- It lets us discuss that academic performance may contribute to depression after controlling for the other variables, even if the evidence isn't quite strong enough to declare it statistically significant at the 0.05 level.
+
+## Recap of model selection
+
+We began by fitting a logistic regression model containing all plausible explanatory variables. Variables that were not statistically significant were removed sequentially, and competing models were compared using Akaike's Information Criterion (AIC). The final model was chosen based on a balance between model fit, parsimony, and interpretability. Although academic performance was not statistically significant at the 5% level, retaining it produced the lowest AIC of `r round(summary(reduced_model_1)$aic, 2)`, so it was included in the final model
+
+Lets store our final model into an object called `final_model`:
+
+```{r}
+final_model <- reduced_model_1
+summary(final_model)
+str(final_model)
+```
+
+
+Should we group together some of the numeric variables?
