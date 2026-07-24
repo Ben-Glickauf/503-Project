@@ -281,7 +281,6 @@ rmse <- sqrt(colMeans((coef_store -
 
 5.  Evaluate whether the estimation procedure is able to recover the true parameter values accurately and consistently.
 
-
 ## Real code to generate data
 
 ### Step 1: Save the "true" parameter values
@@ -297,31 +296,27 @@ We'll write this as a function because we'll eventually call it many times.
 
 ```{r}
 generate_data <- function(data, model) {
-
-  # Sample predictor values with replacement
-  X_sim <- data[
-    sample(nrow(data), replace = TRUE),
-    c("gender",
-      "daily_social_media_hours",
-      "sleep_hours",
-      "stress_level",
-      "anxiety_level")
-  ]
-
-  # Calculate probabilities from the fitted model
+  
+  # Predictor names used in the fitted model
+  predictor_names <- attr(terms(model), "term.labels")
+  
+  # Keep only the predictors
+  X_sim <- data[, predictor_names, drop = FALSE]
+  
+  # Compute probabilities from the fitted model
   p <- predict(model,
                newdata = X_sim,
                type = "response")
-
+  
   # Generate binary responses
-  y_sim <- rbinom(nrow(X_sim),
+  y_sim <- rbinom(n = nrow(X_sim),
                   size = 1,
                   prob = p)
-
-  # Combine predictors and response
+  
+  # Create synthetic dataset
   sim_data <- X_sim
   sim_data$depression_label <- y_sim
-
+  
   sim_data
 }
 ```
@@ -353,3 +348,104 @@ sim_model <- glm(
 coef(sim_model)
 ```
 
+#### Why are we getting this warning?
+
+remember that our original data have only
+
+- **31 depressed teens**
+
+- **1169 non-depressed teens**
+
+so the fitted model naturally assigns very small probabilities to most observations. When we generate synthetic responses from those probabilities, many simulated datasets still exhibit quasi-complete separation. That's exactly what `glm()` is warning you about.
+
+I don't think we should spend any more time trying to eliminate this warning. It's a property of the data, not a coding error.
+
+## Running the simulation study
+
+The function below automates the simulation study. For each simulation, it generates a synthetic dataset from the fitted logistic regression model, refits the same model to the synthetic data, and stores the estimated regression coefficients. Repeating this process many times allows us to approximate the sampling distribution of each coefficient under the assumed statistical model. These simulated estimates will later be used to evaluate the performance of the maximum likelihood estimation procedure by examining measures such as bias, variability, and root mean squared error (RMSE).
+
+```{r}
+run_simulation <- function(model, data, B = 1000) {
+  
+  # True parameter values
+  beta_true <- coef(model)
+  
+  # Storage for estimated coefficients
+  coef_store <- matrix(
+    NA,
+    nrow = B,
+    ncol = length(beta_true)
+  )
+  
+  colnames(coef_store) <- names(beta_true)
+  
+  warnings <- 0
+  failures <- 0
+  
+  for (i in 1:B) {
+    
+    # Generate one synthetic dataset
+    sim_data <- generate_data(data, model)
+    
+    # Fit the model
+    fit <- withCallingHandlers(
+      
+      try(
+        glm(formula(model),
+            data = sim_data,
+            family = binomial(link = "logit")),
+        silent = TRUE
+      ),
+      
+      warning = function(w) {
+        warnings <<- warnings + 1
+        invokeRestart("muffleWarning")
+      }
+      
+    )
+    
+    # Save coefficient estimates
+    if (!inherits(fit, "try-error")) {
+      
+      coef_store[i, ] <- coef(fit)
+      
+    } else {
+      
+      failures <- failures + 1
+      
+    }
+    
+  }
+  
+  list(
+    beta_true = beta_true,
+    coef_store = coef_store,
+    warnings = warnings,
+    failures = failures,
+    successes = B - failures
+  )
+  
+}
+```
+
+#### Example:
+
+```{r}
+set.seed(123)
+
+results <- run_simulation(
+  model = final_model,
+  data = TMH,
+  B = 1000
+)
+```
+
+```{r}
+results$warnings
+results$failures
+results$successes
+
+head(results$coef_store)
+
+results$beta_true
+```
