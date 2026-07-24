@@ -209,7 +209,7 @@ dbl (10): age, daily_social_media_hours, sleep_hours, screen_time_before_sle...
   ..   addiction_level = col_double(),
   ..   depression_label = col_double()
   .. )
- - attr(*, "problems")=&lt;pointer: 0x8a4d24180&gt; </code></pre>
+ - attr(*, "problems")=&lt;pointer: 0x962ff00a0&gt; </code></pre>
 </div>
 </div>
 <p>Lets change some of the character values to factors. I also will not be including <code>addiction level</code> nor <code>platform_ usage</code> in this model. I won’t be including <code>addiction level</code> because it is too closely related to the response variable of interest, <code>depression label</code> (a binary variable taking on values 0 or 1). I won’t be including <code>platform_ usage</code> because it doesn’t relate to our research question. If we wanted to measure which platforms are more closely related to depression, then we’d include it. What we’re interested in though, is how <strong>all</strong> social media usage affects teen mental health.</p>
@@ -402,7 +402,7 @@ AIC: 100.07
 Number of Fisher Scoring iterations: 10</code></pre>
 </div>
 </div>
-<p>This model showed an improvement in Akaike’s Information Criterion (AIC). The <code>full_model</code> had an AIC of 103.45, compared to an AIC of 103.45 from <code>reduced_model_1</code>.</p>
+<p>This model showed an improvement in Akaike’s Information Criterion (AIC). The <code>full_model</code> had an AIC of 103.45, compared to an AIC of 100.07 from <code>reduced_model_1</code>.</p>
 <p>However, <code>academic_performance</code> now has a p-value of 0.14, which is no longer close to significance. Lets remove it and look at the difference.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>reduced_model_2 <span class="ot">&lt;-</span> <span class="fu">glm</span>(</span>
@@ -467,7 +467,181 @@ Number of Fisher Scoring iterations: 10</code></pre>
 <p>We began by fitting a logistic regression model containing all plausible explanatory variables. Variables that were not statistically significant were removed sequentially, and competing models were compared using Akaike’s Information Criterion (AIC). The final model was chosen based on a balance between model fit, parsimony, and interpretability. Although academic performance was not statistically significant at the 5% level, retaining it produced the lowest AIC of 100.07, so it was included in the final model</p>
 <p>Lets store our final model into an object called <code>final_model</code>:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>final_model <span class="ot">&lt;-</span> reduced_model_1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>final_model <span class="ot">&lt;-</span> reduced_model_1</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(final_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = depression_label ~ gender + daily_social_media_hours + 
+    sleep_hours + academic_performance + stress_level + anxiety_level, 
+    family = binomial(link = "logit"), data = TMH)
+
+Coefficients:
+                         Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)              -13.4346     3.1333  -4.288 1.81e-05 ***
+gendermale                -1.3626     0.6479  -2.103   0.0354 *  
+daily_social_media_hours   1.1029     0.2176   5.069 4.00e-07 ***
+sleep_hours               -2.3297     0.4493  -5.185 2.16e-07 ***
+academic_performance       0.7817     0.5252   1.488   0.1367    
+stress_level               0.8833     0.1770   4.991 6.00e-07 ***
+anxiety_level              0.9982     0.2018   4.948 7.51e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 287.870  on 1199  degrees of freedom
+Residual deviance:  86.072  on 1193  degrees of freedom
+AIC: 100.07
+
+Number of Fisher Scoring iterations: 10</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(final_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>List of 30
+ $ coefficients     : Named num [1:7] -13.435 -1.363 1.103 -2.33 0.782 ...
+  ..- attr(*, "names")= chr [1:7] "(Intercept)" "gendermale" "daily_social_media_hours" "sleep_hours" ...
+ $ residuals        : Named num [1:1200] -1 -1 -1 -1 -1 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ fitted.values    : Named num [1:1200] 3.36e-08 3.77e-09 8.52e-10 5.45e-06 3.82e-05 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ effects          : Named num [1:1200] 3.892 0.403 2.448 2.083 0.275 ...
+  ..- attr(*, "names")= chr [1:1200] "(Intercept)" "gendermale" "daily_social_media_hours" "sleep_hours" ...
+ $ R                : num [1:7, 1:7] -3.52 0 0 0 0 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:7] "(Intercept)" "gendermale" "daily_social_media_hours" "sleep_hours" ...
+  .. ..$ : chr [1:7] "(Intercept)" "gendermale" "daily_social_media_hours" "sleep_hours" ...
+ $ rank             : int 7
+ $ qr               :List of 5
+  ..$ qr   : num [1:1200, 1:7] -3.52 1.75e-05 8.30e-06 6.64e-04 1.76e-03 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:1200] "1" "2" "3" "4" ...
+  .. .. ..$ : chr [1:7] "(Intercept)" "gendermale" "daily_social_media_hours" "sleep_hours" ...
+  ..$ rank : int 7
+  ..$ qraux: num [1:7] 1 1 1 1 1 ...
+  ..$ pivot: int [1:7] 1 2 3 4 5 6 7
+  ..$ tol  : num 1e-11
+  ..- attr(*, "class")= chr "qr"
+ $ family           :List of 13
+  ..$ family    : chr "binomial"
+  ..$ link      : chr "logit"
+  ..$ linkfun   :function (mu)  
+  ..$ linkinv   :function (eta)  
+  ..$ variance  :function (mu)  
+  ..$ dev.resids:function (y, mu, wt)  
+  ..$ aic       :function (y, n, mu, wt, dev)  
+  ..$ mu.eta    :function (eta)  
+  ..$ initialize: language {     if (NCOL(y) == 1) { ...
+  ..$ validmu   :function (mu)  
+  ..$ valideta  :function (eta)  
+  ..$ simulate  :function (object, nsim)  
+  ..$ dispersion: num 1
+  ..- attr(*, "class")= chr "family"
+ $ linear.predictors: Named num [1:1200] -17.2 -19.4 -20.9 -12.1 -10.2 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ deviance         : num 86.1
+ $ aic              : num 100
+ $ null.deviance    : num 288
+ $ iter             : int 10
+ $ weights          : Named num [1:1200] 3.36e-08 3.77e-09 8.53e-10 5.45e-06 3.82e-05 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ prior.weights    : Named num [1:1200] 1 1 1 1 1 1 1 1 1 1 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ df.residual      : int 1193
+ $ df.null          : int 1199
+ $ y                : Named num [1:1200] 0 0 0 0 0 0 0 0 0 0 ...
+  ..- attr(*, "names")= chr [1:1200] "1" "2" "3" "4" ...
+ $ converged        : logi TRUE
+ $ boundary         : logi FALSE
+ $ model            :'data.frame':  1200 obs. of  7 variables:
+  ..$ depression_label        : num [1:1200] 0 0 0 0 0 0 0 0 0 0 ...
+  ..$ gender                  : Factor w/ 2 levels "female","male": 2 1 1 2 1 1 1 2 1 2 ...
+  ..$ daily_social_media_hours: num [1:1200] 7.9 1.9 1.3 7.4 4.7 7.4 2.5 4 3.3 1.9 ...
+  ..$ sleep_hours             : num [1:1200] 7.4 8 7.6 6.9 4.9 4.4 6.4 4.2 5 4.9 ...
+  ..$ academic_performance    : num [1:1200] 3.01 3.22 3.92 3.48 2.37 2.63 2.63 2.4 2.04 3.77 ...
+  ..$ stress_level            : num [1:1200] 2 8 2 1 3 3 2 6 1 1 ...
+  ..$ anxiety_level           : num [1:1200] 2 1 4 7 5 5 2 10 10 1 ...
+  ..- attr(*, "terms")=Classes 'terms', 'formula'  language depression_label ~ gender + daily_social_media_hours + sleep_hours + academic_performance +      stress_level + anxiety_level
+  .. .. ..- attr(*, "variables")= language list(depression_label, gender, daily_social_media_hours, sleep_hours, academic_performance,      stress_level, anxiety_level)
+  .. .. ..- attr(*, "factors")= int [1:7, 1:6] 0 1 0 0 0 0 0 0 0 1 ...
+  .. .. .. ..- attr(*, "dimnames")=List of 2
+  .. .. .. .. ..$ : chr [1:7] "depression_label" "gender" "daily_social_media_hours" "sleep_hours" ...
+  .. .. .. .. ..$ : chr [1:6] "gender" "daily_social_media_hours" "sleep_hours" "academic_performance" ...
+  .. .. ..- attr(*, "term.labels")= chr [1:6] "gender" "daily_social_media_hours" "sleep_hours" "academic_performance" ...
+  .. .. ..- attr(*, "order")= int [1:6] 1 1 1 1 1 1
+  .. .. ..- attr(*, "intercept")= int 1
+  .. .. ..- attr(*, "response")= int 1
+  .. .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+  .. .. ..- attr(*, "predvars")= language list(depression_label, gender, daily_social_media_hours, sleep_hours, academic_performance,      stress_level, anxiety_level)
+  .. .. ..- attr(*, "dataClasses")= Named chr [1:7] "numeric" "factor" "numeric" "numeric" ...
+  .. .. .. ..- attr(*, "names")= chr [1:7] "depression_label" "gender" "daily_social_media_hours" "sleep_hours" ...
+ $ call             : language glm(formula = depression_label ~ gender + daily_social_media_hours + sleep_hours +      academic_performance + st| __truncated__ ...
+ $ formula          :Class 'formula'  language depression_label ~ gender + daily_social_media_hours + sleep_hours + academic_performance +      stress_level + anxiety_level
+  .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+ $ terms            :Classes 'terms', 'formula'  language depression_label ~ gender + daily_social_media_hours + sleep_hours + academic_performance +      stress_level + anxiety_level
+  .. ..- attr(*, "variables")= language list(depression_label, gender, daily_social_media_hours, sleep_hours, academic_performance,      stress_level, anxiety_level)
+  .. ..- attr(*, "factors")= int [1:7, 1:6] 0 1 0 0 0 0 0 0 0 1 ...
+  .. .. ..- attr(*, "dimnames")=List of 2
+  .. .. .. ..$ : chr [1:7] "depression_label" "gender" "daily_social_media_hours" "sleep_hours" ...
+  .. .. .. ..$ : chr [1:6] "gender" "daily_social_media_hours" "sleep_hours" "academic_performance" ...
+  .. ..- attr(*, "term.labels")= chr [1:6] "gender" "daily_social_media_hours" "sleep_hours" "academic_performance" ...
+  .. ..- attr(*, "order")= int [1:6] 1 1 1 1 1 1
+  .. ..- attr(*, "intercept")= int 1
+  .. ..- attr(*, "response")= int 1
+  .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; 
+  .. ..- attr(*, "predvars")= language list(depression_label, gender, daily_social_media_hours, sleep_hours, academic_performance,      stress_level, anxiety_level)
+  .. ..- attr(*, "dataClasses")= Named chr [1:7] "numeric" "factor" "numeric" "numeric" ...
+  .. .. ..- attr(*, "names")= chr [1:7] "depression_label" "gender" "daily_social_media_hours" "sleep_hours" ...
+ $ data             : spc_tbl_ [1,200 × 13] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+  ..$ age                     : num [1:1200] 14 19 17 15 15 19 18 16 19 15 ...
+  ..$ gender                  : Factor w/ 2 levels "female","male": 2 1 1 2 1 1 1 2 1 2 ...
+  ..$ daily_social_media_hours: num [1:1200] 7.9 1.9 1.3 7.4 4.7 7.4 2.5 4 3.3 1.9 ...
+  ..$ platform_usage          : chr [1:1200] "Instagram" "TikTok" "Instagram" "TikTok" ...
+  ..$ sleep_hours             : num [1:1200] 7.4 8 7.6 6.9 4.9 4.4 6.4 4.2 5 4.9 ...
+  ..$ screen_time_before_sleep: num [1:1200] 2.9 2.9 0.5 1.6 3 2.4 2.4 0.5 2.1 1.5 ...
+  ..$ academic_performance    : num [1:1200] 3.01 3.22 3.92 3.48 2.37 2.63 2.63 2.4 2.04 3.77 ...
+  ..$ physical_activity       : num [1:1200] 1.5 0.8 0 0.8 1.4 0.6 0.7 1.3 0.9 1.1 ...
+  ..$ social_interaction_level: Factor w/ 3 levels "low","medium",..: 1 3 3 2 2 3 1 1 3 3 ...
+  ..$ stress_level            : num [1:1200] 2 8 2 1 3 3 2 6 1 1 ...
+  ..$ anxiety_level           : num [1:1200] 2 1 4 7 5 5 2 10 10 1 ...
+  ..$ addiction_level         : num [1:1200] 1 10 2 9 2 7 5 5 9 4 ...
+  ..$ depression_label        : num [1:1200] 0 0 0 0 0 0 0 0 0 0 ...
+  ..- attr(*, "spec")=
+  .. .. cols(
+  .. ..   age = col_double(),
+  .. ..   gender = col_character(),
+  .. ..   daily_social_media_hours = col_double(),
+  .. ..   platform_usage = col_character(),
+  .. ..   sleep_hours = col_double(),
+  .. ..   screen_time_before_sleep = col_double(),
+  .. ..   academic_performance = col_double(),
+  .. ..   physical_activity = col_double(),
+  .. ..   social_interaction_level = col_character(),
+  .. ..   stress_level = col_double(),
+  .. ..   anxiety_level = col_double(),
+  .. ..   addiction_level = col_double(),
+  .. ..   depression_label = col_double()
+  .. .. )
+  ..- attr(*, "problems")=&lt;pointer: 0x962ff00a0&gt; 
+ $ offset           : NULL
+ $ control          :List of 3
+  ..$ epsilon: num 1e-08
+  ..$ maxit  : num 25
+  ..$ trace  : logi FALSE
+ $ method           : chr "glm.fit"
+ $ contrasts        :List of 1
+  ..$ gender: chr "contr.treatment"
+ $ xlevels          :List of 1
+  ..$ gender: chr [1:2] "female" "male"
+ - attr(*, "class")= chr [1:2] "glm" "lm"</code></pre>
+</div>
+</div>
+<p>Should we group together some of the numeric variables? Are there any variables I’d consider adding?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(TMH<span class="sc">$</span>daily_social_media_hours))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 71</code></pre>
+</div>
 </div>
 </section>
 

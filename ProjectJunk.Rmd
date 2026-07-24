@@ -27,7 +27,6 @@ output: pdf_document
 5. Evaluate whether the estimation procedure is able to recover the true parameter values accurately and          consistently.
 
 ```{r}
-```r
 # Fit logistic regression model to real data
 depression_model <- glm(
   depression_label ~ gender +
@@ -81,8 +80,6 @@ for (sim in 1:num_simulations) {
 # Compare simulated coefficient estimates
 # to the original estimates beta_hat
 ```
-
-
 
 
 

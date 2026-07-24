@@ -7,14 +7,23 @@ editor_options:
 
 ## The data
 
-The data set I chose is the [Social Media Impact on Teen Mental Health](https://www.kaggle.com/datasets/algozee/teenager-menthal-healy/data) data set. This data studies how social media use affects the mental health of teenagers. It includes daily habits like social media hours, sleep, stress, anxiety, and physical activity. I chose this data because of the normalization of what people are calling "doom scrolling," which in lammens terms is spending hours scrolling through social media with no end in sight. Most social media platforms today all have a section for short, repeating clips and videos that are meant to hold your attention for hours on end. I myself have caught myself doom scrolling, losing track of time and becoming completely encapsulated by these short videos, often called "shorts." What I want to know is whether or not spending large amounts of time on social media can influence your mental health, and whether other daily activities such as exercise, sleep, and real-life interactions can benefit mental health.
+The data set I chose is the [Social Media Impact on Teen Mental Health](https://www.kaggle.com/datasets/itszubi/impact-of-social-media-on-teens-mental-health) data set. This data studies how social media use affects the mental health of teenagers. It includes daily habits like social media hours, sleep, stress, anxiety, and physical activity. I chose this data because of the normalization of what people are calling "doom scrolling," which in layman's terms is spending hours scrolling through social media with no end in sight. Most social media platforms today all have a section for short, repeating clips and videos that are meant to hold your attention for hours on end. I myself have caught myself doom scrolling, losing track of time and becoming completely encapsulated by these short videos, often called "shorts." What I want to know is whether or not spending large amounts of time on social media can influence your mental health, and whether other daily activities such as exercise, sleep, and real-life interactions can benefit mental health.
 
 ```{r}
 library(readr)
 TMH <- read_csv("Teen_Mental_Health_Dataset.csv")
+```
+
+Let's check some of the data quality real quick.
+
+```{r}
+dim(TMH)
 summary(TMH)
 str(TMH)
+colSums(is.na(TMH))
 ```
+
+The data set has 13 columns and 1200 rows, none with a missing value.
 
 Lets change some of the character values to factors. I also will not be including `addiction level` nor `platform_ usage` in this model. I won't be including `addiction level` because it is too closely related to the response variable of interest, `depression label` (a binary variable taking on values 0 or 1). I won't be including `platform_ usage` because it doesn't relate to our research question. If we wanted to measure which platforms are more closely related to depression, then we'd include it. What we're interested in though, is how **all** social media usage affects teen mental health.
 
@@ -38,6 +47,7 @@ cor(TMH[, c(
     "screen_time_before_sleep",
     "academic_performance",
     "physical_activity",
+    "anxiety_level",
     "stress_level"
 )])
 ```
@@ -45,6 +55,10 @@ cor(TMH[, c(
 The correlations are all below 0.08, so none of our numeric predictors are strongly correlated with each other. That means there is no evidence of multicollinearity based on these pairwise correlations
 
 ## Model selection
+
+A logistic regression model was used because the response variable, `depression_label`, is binary, indicating whether a teen is classified as depressed (1) or not depressed (0). Linear regression is not appropriate for a binary outcome because it can produce predicted values outside the range of 0 to 1 and does not account for the relationship between predictors and probabilities. Logistic regression addresses this issue by modeling the log-odds of depression as a function of the explanatory variables.
+
+The response variable was highly imbalanced, with only 31 of the 1,200 observations classified as depressed (2.6%). This imbalance may increase the variability of the estimated regression coefficients and contribute to the separation warnings observed during model fitting.
 
 Before we decide on a model, lets fit the full model and see which variables are significant based on their p-values. We'll use a significance level of 0.05 for this model.
 
@@ -83,13 +97,13 @@ These are statistically significant and have clear interpretations:
 
 - `gender` (p = 0.041)
 
-- `daily_social_media_hours` (p < 0.001)
+- `daily_social_media_hours` (p \< 0.001)
 
-- `sleep_hours` (p < 0.001)
+- `sleep_hours` (p \< 0.001)
 
-- `stress_level` (p < 0.001)
+- `stress_level` (p \< 0.001)
 
-- `anxiety_level` (p < 0.001)
+- `anxiety_level` (p \< 0.001)
 
 ### Variables to consider removing
 
@@ -101,7 +115,7 @@ These do not appear to contribute much once the other variables are in the model
 
 - `physical_activity` (p = 0.142)
 
-- `social_interaction_level` (both levels p > 0.5)
+- `social_interaction_level` (both levels p \> 0.5)
 
 ### One variable I'd think about
 
@@ -131,7 +145,7 @@ reduced_model_1 <- glm(
 summary(reduced_model_1)
 ```
 
-This model showed an improvement in Akaike's Information Criterion (AIC). The `full_model` had an AIC of `r round(summary(full_model)$aic, 2)`, compared to an AIC of `r round(summary(full_model)$aic, 2)` from `reduced_model_1`.
+This model showed an improvement in Akaike's Information Criterion (AIC). The `full_model` had an AIC of `r round(summary(full_model)$aic, 2)`, compared to an AIC of `r round(summary(reduced_model_1)$aic, 2)` from `reduced_model_1`.
 
 However, `academic_performance` now has a p-value of `r round(summary(reduced_model_1)$coefficients[5,4], 2)`, which is no longer close to significance. Lets remove it and look at the difference.
 
@@ -160,27 +174,182 @@ Removing `academic_performance` made the model:
 
 - but it **didn't improve the overall fit**. In fact, the AIC got a little worse
 
-For this project, we will use `reduced_model_1` because
+For this project, we will use `reduced_model_2` because although including `academic_performance` produced a slightly lower AIC, the improvement was negligible. Given the relatively small number of depression cases in the dataset, the simpler model was chosen to improve model stability and reduce the number of estimated parameters.
 
-- It has the **lowest AIC** of all the models we fit.
+### Recap of model selection
 
-- `academic_performance` is close enough to significance that it's reasonable to retain.
-
-- It adds only one coefficient, so we're not sacrificing much simplicity.
-
-- It lets us discuss that academic performance may contribute to depression after controlling for the other variables, even if the evidence isn't quite strong enough to declare it statistically significant at the 0.05 level.
-
-## Recap of model selection
-
-We began by fitting a logistic regression model containing all plausible explanatory variables. Variables that were not statistically significant were removed sequentially, and competing models were compared using Akaike's Information Criterion (AIC). The final model was chosen based on a balance between model fit, parsimony, and interpretability. Although academic performance was not statistically significant at the 5% level, retaining it produced the lowest AIC of `r round(summary(reduced_model_1)$aic, 2)`, so it was included in the final model
+Two competing logistic regression models were considered. Although the model including academic performance had a slightly lower AIC (100.07 versus 100.33), the difference was negligible. A small simulation study (100 simulated datasets) showed that the model including academic performance produced substantially more separation warnings during estimation (63 versus 43) while both models converged successfully. Therefore, the simpler model was selected because it provided comparable fit while yielding a more stable estimation procedure.
 
 Lets store our final model into an object called `final_model`:
 
 ```{r}
-final_model <- reduced_model_1
+final_model <- reduced_model_2
 summary(final_model)
-str(final_model)
 ```
 
+Lets also make a new data frame called `model_data` which retains only the variables used in the model (I don't know why we'd need this, but might come in handy):
 
-Should we group together some of the numeric variables?
+```{r}
+keep_cols <- c("depression_label",
+               "gender",
+               "daily_social_media_hours",
+               "sleep_hours",
+               "stress_level",
+               "anxiety_level")
+
+model_data <- TMH[, keep_cols]
+head(model_data)
+```
+
+## Estimation procedures
+
+The proposed model for this project is a logistic regression model because the response variable (`depression_label`) is binary. The primary estimation procedure for logistic regression is **Maximum Likelihood Estimation (MLE)**, which estimates the regression coefficients by maximizing the likelihood of observing the data. In R, the `glm()` function computes these estimates using the **Iteratively Reweighted Least Squares (IRLS)** algorithm, an iterative optimization method based on the **Newton–Raphson** approach. These methods are appropriate because they are specifically designed to estimate parameters in logistic regression models with binary response variables.
+
+## Pseudocode to generate data
+
+1.  Fit the logistic regression model to the real dataset.
+
+2.  Save the estimated regression coefficients and treat them as the true parameter values.
+
+```{r}
+beta_true <- coef(final_model)
+```
+
+3.  Repeat the following steps for a large number of simulations:
+
+- Sample values of the predictor variables (gender, daily social media hours, sleep hours, stress level, and anxiety level) from the observed data.
+
+```{r, eval = FALSE}
+X_sim <- TMH[sample(nrow(TMH), replace = TRUE),
+             c("gender",
+               "daily_social_media_hours",
+               "sleep_hours",
+               "stress_level",
+               "anxiety_level")]
+```
+
+- Use the fitted logistic regression model to calculate the probability of depression for each observation.
+
+```{r, eval = FALSE}
+p <- predict(final_model, newdata = X_sim, type = "response")
+```
+
+- Generate a depression outcome (0 = No, 1 = Yes) from a Bernoulli distribution using the calculated probability.
+
+```{r, eval = FALSE}
+y_sim <- rbinom(nrow(X_sim), 1, p)
+```
+
+- Combine the predictors and generated outcomes to form a synthetic dataset.
+
+```{r, eval = FALSE}
+sim_data <- X_sim
+sim_data$depression_label <- y_sim
+```
+
+- Fit the same logistic regression model to the synthetic dataset.
+
+```{r, eval = FALSE}
+sim_model <- glm(depression_label ~ gender +
+                                    daily_social_media_hours +
+                                    sleep_hours +
+                                    stress_level +
+                                    anxiety_level,
+                 data = sim_data,
+                 family = binomial)
+```
+
+- Store the estimated regression coefficients.
+
+```{r, eval = FALSE}
+beta_sim <- coef(sim_model)
+
+# eventually we'll want something like coef_store[i, ] <- coef(sim_model) inside a loop
+```
+
+4.  Compare the estimated coefficients from the simulations to the true coefficient values used to generate the data.
+
+```{r, eval = FALSE}
+bias <- colMeans(coef_store) - beta_true
+# or
+rmse <- sqrt(colMeans((coef_store -
+                       matrix(beta_true,
+                              nrow = N,
+                              ncol = length(beta_true),
+                              byrow = TRUE))^2))
+```
+
+5.  Evaluate whether the estimation procedure is able to recover the true parameter values accurately and consistently.
+
+
+## Real code to generate data
+
+### Step 1: Save the "true" parameter values
+
+```{r}
+# Treat the fitted coefficients as the true parameter values
+beta_true <- coef(final_model)
+```
+
+### Step 2: Generate one synthetic dataset
+
+We'll write this as a function because we'll eventually call it many times.
+
+```{r}
+generate_data <- function(data, model) {
+
+  # Sample predictor values with replacement
+  X_sim <- data[
+    sample(nrow(data), replace = TRUE),
+    c("gender",
+      "daily_social_media_hours",
+      "sleep_hours",
+      "stress_level",
+      "anxiety_level")
+  ]
+
+  # Calculate probabilities from the fitted model
+  p <- predict(model,
+               newdata = X_sim,
+               type = "response")
+
+  # Generate binary responses
+  y_sim <- rbinom(nrow(X_sim),
+                  size = 1,
+                  prob = p)
+
+  # Combine predictors and response
+  sim_data <- X_sim
+  sim_data$depression_label <- y_sim
+
+  sim_data
+}
+```
+
+Now generating a synthetic dataset is simply:
+
+```{r}
+set.seed(123)
+
+sim_data <- generate_data(TMH, final_model)
+
+head(sim_data)
+```
+
+### Step 3: Fit the model to one synthetic dataset
+
+```{r}
+sim_model <- glm(
+  depression_label ~
+    gender +
+    daily_social_media_hours +
+    sleep_hours +
+    stress_level +
+    anxiety_level,
+  data = sim_data,
+  family = binomial(link = "logit")
+)
+
+coef(sim_model)
+```
+
