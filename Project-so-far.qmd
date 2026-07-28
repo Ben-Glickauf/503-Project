@@ -10,8 +10,7 @@ editor_options:
 The data set I chose is the [Social Media Impact on Teen Mental Health](https://www.kaggle.com/datasets/itszubi/impact-of-social-media-on-teens-mental-health) data set. This data studies how social media use affects the mental health of teenagers. It includes daily habits like social media hours, sleep, stress, anxiety, and physical activity. I chose this data because of the normalization of what people are calling "doom scrolling," which in layman's terms is spending hours scrolling through social media with no end in sight. Most social media platforms today all have a section for short, repeating clips and videos that are meant to hold your attention for hours on end. I myself have caught myself doom scrolling, losing track of time and becoming completely encapsulated by these short videos, often called "shorts." What I want to know is whether or not spending large amounts of time on social media can influence your mental health, and whether other daily activities such as exercise, sleep, and real-life interactions can benefit mental health.
 
 ```{r}
-library(readr)
-TMH <- read_csv("Teen_Mental_Health_Dataset.csv")
+TMH <- read.csv("Teen_Mental_Health_Dataset.csv", stringsAsFactors = FALSE)
 ```
 
 Let's check some of the data quality real quick.
@@ -366,67 +365,52 @@ The function below automates the simulation study. For each simulation, it gener
 
 ```{r}
 run_simulation <- function(model, data, B = 1000) {
-  
+
   # True parameter values
   beta_true <- coef(model)
-  
-  # Storage for estimated coefficients
-  coef_store <- matrix(
-    NA,
-    nrow = B,
-    ncol = length(beta_true)
-  )
-  
+
+  p <- length(beta_true)
+
+  # Storage
+  coef_store <- matrix(NA, nrow = B, ncol = p)
   colnames(coef_store) <- names(beta_true)
-  
-  warnings <- 0
-  failures <- 0
-  
+
+  aic <- numeric(B)
+  bic <- numeric(B)
+  converged <- logical(B)
+
   for (i in 1:B) {
-    
+
     # Generate one synthetic dataset
     sim_data <- generate_data(data, model)
-    
+
     # Fit the model
-    fit <- withCallingHandlers(
-      
-      try(
-        glm(formula(model),
-            data = sim_data,
-            family = binomial(link = "logit")),
-        silent = TRUE
-      ),
-      
-      warning = function(w) {
-        warnings <<- warnings + 1
-        invokeRestart("muffleWarning")
-      }
-      
+    fit <- glm(
+      formula(model),
+      data = sim_data,
+      family = binomial(link = "logit")
     )
-    
-    # Save coefficient estimates
-    if (!inherits(fit, "try-error")) {
-      
-      coef_store[i, ] <- coef(fit)
-      
-    } else {
-      
-      failures <- failures + 1
-      
-    }
-    
+
+    # Store results
+    coef_store[i, ] <- coef(fit)
+    aic[i] <- AIC(fit)
+    bic[i] <- BIC(fit)
+    converged[i] <- fit$converged
+
   }
-  
+
   list(
     beta_true = beta_true,
     coef_store = coef_store,
-    warnings = warnings,
-    failures = failures,
-    successes = B - failures
+    aic = aic,
+    bic = bic,
+    converged = converged,
+    B = B
   )
-  
+
 }
 ```
+
 
 #### Example:
 
@@ -441,11 +425,26 @@ results <- run_simulation(
 ```
 
 ```{r}
-results$warnings
-results$failures
-results$successes
+# Number of simulations
+results$B
 
+# Did every model converge?
+all(results$converged)
+
+# Number of converged models
+sum(results$converged)
+
+# Coefficient estimates from the first few simulations
 head(results$coef_store)
 
+# True parameter values used to generate the data
 results$beta_true
+
+# First few AIC values
+head(results$aic)
+
+# First few BIC values
+head(results$bic)
 ```
+
+

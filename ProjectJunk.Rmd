@@ -128,15 +128,15 @@ hist(
 ```
 
 ```{r echo = FALSE}
-plot(
-  TMH$age,
-  TMH$daily_social_media_hours,
-  main = "Age vs Daily Social Media Usage",
-  xlab = "Age",
-  ylab = "Daily Social Media Hours",
-  pch = 18,
-  col = "black"
-)
+# plot(
+#   TMH$age,
+#   TMH$daily_social_media_hours,
+#   main = "Age vs Daily Social Media Usage",
+#   xlab = "Age",
+#   ylab = "Daily Social Media Hours",
+#   pch = 18,
+#   col = "black"
+# )
 
 ```
 
