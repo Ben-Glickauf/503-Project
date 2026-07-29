@@ -68,6 +68,7 @@ run_simulation <- function(model, data, B = 1000) {
   aic <- numeric(B)
   bic <- numeric(B)
   rmse <- numeric(B)
+  accuracy <- numeric(B)
   converged <- logical(B)
   
   for (i in 1:B) {
@@ -98,6 +99,12 @@ run_simulation <- function(model, data, B = 1000) {
       type = "response"
     )
     
+    # Convert probabilities to predicted classes
+    pred_class <- ifelse(p_hat >= 0.5, 1, 0)
+    
+    # Classification accuracy
+    accuracy[i] <- mean(pred_class == test_data$depression_label)
+    
     rmse[i] <- compute_rmse(
       actual = test_data$depression_label,
       predicted = p_hat
@@ -118,6 +125,7 @@ run_simulation <- function(model, data, B = 1000) {
     aic = aic,
     bic = bic,
     rmse = rmse,
+    accuracy = accuracy,
     converged = converged,
     B = B
   )
