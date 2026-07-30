@@ -1,0 +1,171 @@
+# Project EDA
+# ST 503 Project
+# Benjamin Glickauf
+#
+# This file contains the EDA done for this project
+
+
+
+# Load project files
+source("project_setup.R")
+
+
+# Response distribution
+pdf("response_distribution.pdf")
+
+response_table <- table(TMH$depression_label)
+response_table_prop <- prop.table(response_table)
+
+response_table
+response_table_prop
+
+write.csv(
+  as.data.frame(response_table),
+  "response_distribution.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  as.data.frame(response_table_prop),
+  "response_proportion.csv",
+  row.names = FALSE
+)
+
+barplot(
+  response_table,
+  names.arg = c("No Depression", "Depression"),
+  main = "Distribution of Depression Status",
+  ylab = "Count",
+  col = "lightblue"
+)
+
+dev.off()
+
+
+
+# Gender vs Depression 
+pdf("gender_vs_depression.pdf")
+
+gender_table <- table(TMH$gender, TMH$depression_label)
+
+write.csv(
+  as.data.frame(gender_table),
+  "gender_vs_depression.csv",
+  row.names = FALSE
+)
+
+barplot(
+  gender_table,
+  beside = TRUE,
+  legend.text = c("No Depression", "Depression"),
+  args.legend = list(x = "topright"),
+  xlab = "Gender",
+  ylab = "Count",
+  main = "Depression Status by Gender",
+  col = c("lightblue", "steelblue")
+)
+
+dev.off()
+
+
+# Sleep hours
+pdf("sleep_boxplot.pdf")
+
+boxplot(
+  sleep_hours ~ depression_label,
+  data = TMH,
+  main = "Sleep Hours by Depression Status",
+  xlab = "Depression Status",
+  ylab = "Sleep Hours",
+  col = "lightblue"
+)
+
+dev.off()
+
+
+# Social media hours
+pdf("social_media_boxplot.pdf")
+
+boxplot(
+  daily_social_media_hours ~ depression_label,
+  data = TMH,
+  main = "Daily Social Media Hours by Depression Status",
+  xlab = "Depression Status",
+  ylab = "Hours",
+  col = "steelblue"
+)
+
+dev.off()
+
+
+# Stress level
+pdf("stress_boxplot.pdf")
+
+boxplot(
+  stress_level ~ depression_label,
+  data = TMH,
+  main = "Stress Level by Depression Status",
+  xlab = "Depression Status",
+  ylab = "Stress Level",
+  col = "steelblue"
+)
+
+dev.off()
+
+
+# Anxiety level
+pdf("anxiety_boxplot.pdf")
+
+boxplot(
+  anxiety_level ~ depression_label,
+  data = TMH,
+  main = "Anxiety Level by Depression Status",
+  xlab = "Depression Status",
+  ylab = "Anxiety Level",
+  col = "lightblue"
+)
+
+dev.off()
+
+
+# Correlation matrix
+numeric_vars <- c(
+  "daily_social_media_hours",
+  "sleep_hours",
+  "stress_level",
+  "anxiety_level"
+)
+
+correlation_matrix <- cor(TMH[, numeric_vars])
+
+correlation_matrix
+
+write.csv(
+  correlation_matrix,
+  "correlation_matrix.csv"
+)
+
+
+# Descriptive stats
+descriptive_stats <- data.frame(
+  Variable = c(
+    "Daily Social Media Hours",
+    "Sleep Hours",
+    "Stress Level",
+    "Anxiety Level"
+  ),
+  Mean = sapply(TMH[, numeric_vars], mean),
+  SD = sapply(TMH[, numeric_vars], sd),
+  Min = sapply(TMH[, numeric_vars], min),
+  Q1 = sapply(TMH[, numeric_vars], quantile, 0.25),
+  Median = sapply(TMH[, numeric_vars], median),
+  Q3 = sapply(TMH[, numeric_vars], quantile, 0.75),
+  Max = sapply(TMH[, numeric_vars], max)
+)
+
+write.csv(
+  descriptive_stats,
+  "descriptive_statistics.csv",
+  row.names = FALSE
+)
+

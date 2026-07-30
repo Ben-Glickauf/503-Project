@@ -2,7 +2,7 @@
 # ST 503 Project
 # Benjamin Glickauf
 #
-# This file contains helper functions used throughout the simulation study.
+# This file contains helper functions used throughout the simulation study
 
 
 # Generate one synthetic dataset
