@@ -1,3 +1,9 @@
+---
+title: "figures"
+format: html
+---
+
+```{r}
 # Project EDA
 # ST 503 Project
 # Benjamin Glickauf
@@ -165,3 +171,11 @@ write.csv(
   row.names = FALSE
 )
 
+
+```
+
+
+
+$\beta_0 + \beta_1(\text{Gender}) + \beta_2(\text{Daily Social Media Hours}) + \beta_3(\text{Sleep Hours}) + \beta_4(\text{Stress Level}) + \beta_5(\text{Anxiety Level})$
+
+$\log\left(\frac{p_i}{1-p_i}\right) = \beta_0 + \beta_1(Gender) + \beta_2(Daily\ Social\ Media\ Hours) + \beta_3(Sleep\ Hours) + \beta_4(Stress\ Level) + \beta_5(Anxiety\ Level)$
